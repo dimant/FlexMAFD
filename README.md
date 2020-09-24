@@ -10,7 +10,7 @@ The MAFD is controlled by an [Arduino Teensy LC](https://www.pjrc.com/store/teen
 - 1 trigger output
 - 2 analog outputs
 
-The LED is connected to pin 10. The trigger output, connected to the jack labelled "to ADV/Clock", is connected to GPIO pin 17. The 2 analog outputs aree controlled by  [MPC4902](http://ww1.microchip.com/downloads/en/devicedoc/22250a.pdf) over SPI. The default pins are used for SPI and SPI chip select is on pin 14.
+The LED is connected to pin 10. The trigger output, jack labelled "to ADV/Clock", is routed to GPIO pin 17. The 2 analog outputs aree controlled by  [MPC4902](http://ww1.microchip.com/downloads/en/devicedoc/22250a.pdf) over SPI. The default pins are used for SPI and SPI chip select is on pin 14.
 
 **Note** that CV is 0 - 5V, this is a hardware limitation. One example for using FlexMAFD is so you can sync your DFAM to a MIDI clock.
 
