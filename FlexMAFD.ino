@@ -80,7 +80,7 @@ void sendDAC(int dac, int value)
   SPI.transfer(high); 
   SPI.transfer(low); 
   
-  // take the SS pin high to de-select the chip:  
+  // take the chip select pin high to de-select the chip:  
   digitalWrite(cslPin, HIGH);
 }
 

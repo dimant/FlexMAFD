@@ -10,9 +10,9 @@ The MAFD is controlled by an [Arduino Teensy LC](https://www.pjrc.com/store/teen
 - 1 trigger output
 - 2 analog outputs
 
-The LED is connected to pin 10. The trigger output, jack labelled "to ADV/Clock", is routed to GPIO pin 17. The 2 analog outputs aree controlled by  [MPC4902](http://ww1.microchip.com/downloads/en/devicedoc/22250a.pdf) over SPI. The default pins are used for SPI and SPI chip select is on pin 14.
+The LED is connected to pin 10. The trigger output, jack labelled "to ADV/Clock", is routed to GPIO pin 17. The 2 analog outputs are controlled by an [MPC4902](http://ww1.microchip.com/downloads/en/devicedoc/22250a.pdf) over SPI. The default pins are used for SPI and SPI chip select is on pin 14.
 
-**Note** that CV is 0 - 5V, this is a hardware limitation. One example for using FlexMAFD is so you can sync your DFAM to a MIDI clock.
+**Note** that CV is 0V t0 5V, this is a hardware limitation. One example for using FlexMAFD is so you can sync your DFAM to a MIDI clock. Since FlexMAFD responds to Start/Stop MIDI events, it will always be in sync with your clocking device.
 
 ## Installation
 The following steps need to be completed for installation:
@@ -31,4 +31,3 @@ The FlexMAFD code provides a few values for easy configuration:
 - **ccDACChannel** chooses to which jack to send the CC value. **0** routes to the jack labelled "pressure/mw" and **1** routes to the jack labelled "velocity"
 - **vlDACChannel** chooses to which jack to send velocity information. **0** routes to the jack labelled "pressure/mw" and **1** routes to the jack labelled "velocity"
 - **int clockDiv** typically the MIDI clock is way faster than is useful for clocking the DFAM. This value allows changing the trigger so it is sent only every **clockDiv** clock cycles. By default the value is 6 but your MIDI device might work better with another value.
-- **int pulseLen** allows changing the pulse length of the trigger sent to the DFAM. Longer pulses will be detected more reliably by the DFAM but shorter pulses allow clocking the device faster. This value is in milliseconds and I found that on my DFAM 30ms works fine.
