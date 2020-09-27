@@ -4,12 +4,15 @@
 // note that this implementation assumes 7 bit MIDI data
 
 /// Options:
-const int cc = 1; // the control change # which will be sent to the configured jack
+const int midiChannel = 3; // midi channel on which to listen for CC messages
+
+const int cc1 = 70; // the control change # which will be sent to the configured jack
+const int cc2 = 71; // the control change # which will be sent to the configured jack
 
 // DAC channel 0 is labelled "pressure/mw"
 // DAC channel 1 is labelled velocity
-const int ccDACChannel = 0; // the DAC channel on which to output the CC value
-const int atDACChannel = 1; // the DAC channel on which to output aftertouch information
+const int cc1DACChannel = 0; // the DAC channel on which to output the control change message for cc1 value
+const int cc2DACChannel = 1; // the DAC channel on which to output the control change message for cc2 CC value
 
 const int clockDiv = 6; // send a trigger pulse each x clock cycles
 
@@ -23,7 +26,6 @@ const int cslPin = 14; // SPI chip select pin
 bool ledStatus = false;
 
 int clockDivCnt = 0;
-int notesOn = 0;
 bool dfamRunning = false;
 int dfamStep = 0;
 
@@ -123,30 +125,22 @@ void onClock()
   clockDivCnt += 1;
 }
 
-void onNoteOn(byte inChannel, byte inNote, byte inVelocity)
-{
-  notesOn++;
-
-  sendDAC(atDACChannel, inVelocity);
-}
-
-// Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
-void onNoteOff(byte channel, byte pitch, byte velocity)
-{
-  notesOn--;
-
-  // if this is the last released note, clear the DAC output
-  if(0 == notesOn)
-  {
-    sendDAC(atDACChannel, 0);
-  }
-}
-
 void onControlChange(byte inChannel, byte inNumber, byte inValue)
 {
-  if(cc == inNumber)
+  Serial.printf("channel: %d, number: %d, value: %d\n", inChannel, inNumber, inValue);
+
+  if(midiChannel == inChannel)
   {
-    sendDAC(ccDACChannel, inValue); 
+    if(cc1 == inNumber)
+    {
+      Serial.printf("sending: channel %d, number: %d, value: %d", inChannel, inNumber, inValue);
+      sendDAC(cc1DACChannel, inValue); 
+    }
+    else if(cc2 == inNumber)
+    {
+      Serial.printf("sending: channel %d, number: %d, value: %d", inChannel, inNumber, inValue);
+      sendDAC(cc2DACChannel, inValue);     
+    }
   }
 }
 
@@ -187,8 +181,6 @@ void setup() {
 
   MIDI.begin(MIDI_CHANNEL_OMNI);  // Listen to all incoming messages
   MIDI.setHandleClock(onClock);
-  MIDI.setHandleNoteOn(onNoteOn);
-  MIDI.setHandleNoteOff(onNoteOff);
   MIDI.setHandleControlChange(onControlChange);
   MIDI.setHandleStart(onStart);
   MIDI.setHandleStop(onStop);
