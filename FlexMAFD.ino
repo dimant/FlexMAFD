@@ -9,10 +9,9 @@ const int cc = 1; // the control change # which will be sent to the configured j
 // DAC channel 0 is labelled "pressure/mw"
 // DAC channel 1 is labelled velocity
 const int ccDACChannel = 0; // the DAC channel on which to output the CC value
-const int vlDACChannel = 1; // the DAC channel on which to output aftertouch information
+const int atDACChannel = 1; // the DAC channel on which to output aftertouch information
 
 const int clockDiv = 6; // send a trigger pulse each x clock cycles
-const int pulseLen = 30; // length of the pulse sent to jack labelled "to ADV/CLOCK" in ms
 
 // Create and bind the MIDI interface to the default hardware Serial port
 MIDI_CREATE_DEFAULT_INSTANCE();
@@ -25,6 +24,8 @@ bool ledStatus = false;
 
 int clockDivCnt = 0;
 int notesOn = 0;
+bool dfamRunning = false;
+int dfamStep = 0;
 
 
 /// sends a pulse to the jack labelled "to ADV/CLOCK"
@@ -32,8 +33,7 @@ int notesOn = 0;
 void sendTrigger()
 {
   digitalWrite(trgPin, HIGH);
-  delay(pulseLen);
-  digitalWrite(trgPin, LOW);  
+  digitalWrite(trgPin, LOW);
 }
 
 /// writes a value to a given SPI channel
@@ -80,7 +80,7 @@ void sendDAC(int dac, int value)
   SPI.transfer(high); 
   SPI.transfer(low); 
   
-  // take the chip select pin high to de-select the chip:  
+  // take the SS pin high to de-select the chip:  
   digitalWrite(cslPin, HIGH);
 }
 
@@ -91,31 +91,43 @@ void sendDAC(int dac, int value)
 // MIDI clock cycles, 1 CV trigger will be sent
 void onClock()
 {
-  if(false == ledStatus)
-  {
-    digitalWrite(ledPin, HIGH);
-    ledStatus = true;
-  }
-  else
-  {
-    digitalWrite(ledPin, LOW);
-    ledStatus = false;
-  }
-
   if(clockDivCnt == clockDiv)
   {
-    sendTrigger();
     clockDivCnt = 0;
   }
+
+  if(clockDivCnt == 0 && dfamRunning)
+  {
+    if(false == ledStatus)
+    {
+      digitalWrite(ledPin, HIGH);
+      ledStatus = true;
+    }
+    else
+    {
+      digitalWrite(ledPin, LOW);
+      ledStatus = false;
+    }
+
+    dfamStep++;
+
+    if(dfamStep == 8)
+    {
+      dfamStep = 0;
+    }
+    
+    sendTrigger();
+  }
+
   
   clockDivCnt += 1;
 }
 
 void onNoteOn(byte inChannel, byte inNote, byte inVelocity)
 {
-  notesOn++; 
+  notesOn++;
 
-  sendDAC(vlDACChannel, inVelocity);
+  sendDAC(atDACChannel, inVelocity);
 }
 
 // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
@@ -126,7 +138,7 @@ void onNoteOff(byte channel, byte pitch, byte velocity)
   // if this is the last released note, clear the DAC output
   if(0 == notesOn)
   {
-    sendDAC(vlDACChannel, 0);
+    sendDAC(atDACChannel, 0);
   }
 }
 
@@ -136,6 +148,33 @@ void onControlChange(byte inChannel, byte inNumber, byte inValue)
   {
     sendDAC(ccDACChannel, inValue); 
   }
+}
+
+void onStart()
+{
+  dfamRunning = true;
+  clockDivCnt = 0;
+  dfamStep = 0;
+}
+
+void onStop()
+{
+  dfamRunning = false;
+
+  if(dfamStep == 0)
+  {
+    return;
+  }
+  
+  int i;
+  
+  for(i = 0; i < 8 - dfamStep; i++)
+  {
+    sendTrigger();
+  }
+
+  clockDivCnt = 0;
+  dfamStep = 0;
 }
 
 void setup() {
@@ -151,6 +190,8 @@ void setup() {
   MIDI.setHandleNoteOn(onNoteOn);
   MIDI.setHandleNoteOff(onNoteOff);
   MIDI.setHandleControlChange(onControlChange);
+  MIDI.setHandleStart(onStart);
+  MIDI.setHandleStop(onStop);
 
   SPI.begin();
 }
